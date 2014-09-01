@@ -1,0 +1,79 @@
+name:                   network-uri-sandbox
+version:                0.0
+build-type:             Simple
+cabal-version:          >=1.10
+
+flag network-uri
+  description:          Get Network.URI from the network-uri package
+  default:              True
+
+library
+  exposed-modules:      Test
+  default-language:     Haskell2010
+  build-depends:        base, http-client
+
+  ------------------------------------------------------------------------------
+  -- if flag(network-uri)
+  --   build-depends:      network-uri >= 2.6
+  -- else
+  --   build-depends:      network < 2.6,
+  --                       network-uri < 2.6
+  ------------------------------------------------------------------------------
+  -- This was the proposed set of dependency constraints for using the new
+  -- network-uri package. I was having a problem with this, but now I can't
+  -- reproduce the same problem after returning to it days later.
+  --
+  -- However, I can demonstrate that the first alternative is not good enough
+  -- alone.
+
+  ------------------------------------------------------------------------------
+  -- build-depends:        network-uri >= 2.6
+  ------------------------------------------------------------------------------
+  -- This alone causes a build error if network < 2.6 is installed. The error:
+  --
+  --   Test.hs:11:32:
+  --       Couldn't match expected type ‘network-2.4.2.3:Network.URI.URI’
+  --                   with actual type ‘U.URI’
+  --       NB: ‘network-2.4.2.3:Network.URI.URI’
+  --             is defined in ‘Network.URI’ in package ‘network-2.4.2.3’
+  --           ‘U.URI’
+  --             is defined in ‘Network.URI’ in package ‘network-uri-2.6.0.0’
+  --       In the second argument of ‘C.setUriRelative’, namely ‘path’
+  --       In a stmt of a 'do' block: req' <- C.setUriRelative req path
+  --
+  -- As long as network < 2.6 is used, this constraint is not good enough
+  -- because some other package can depend on network, and these two will
+  -- conflict.
+
+  ------------------------------------------------------------------------------
+  -- build-depends:        network >= 2.6, network-uri >= 2.6
+  ------------------------------------------------------------------------------
+  -- This fixes the above error and uses the latest network-uri.
+
+  ------------------------------------------------------------------------------
+  -- build-depends:        network < 2.6, network-uri < 2.6
+  ------------------------------------------------------------------------------
+  -- > cabal sandbox add-source network-uri
+  --
+  -- This fixes the above error and uses the older network.
+
+  ------------------------------------------------------------------------------
+  if flag(network-uri)
+    build-depends:      network >= 2.6, network-uri >= 2.6
+  else
+    build-depends:      network < 2.6, network-uri < 2.6
+  ------------------------------------------------------------------------------
+  -- My conclusion is that the above constraints should be used for any package
+  -- that needs the Network.URI module.
+  --
+  -- The unfortunate aspect is that a package that only needs the Network.URI
+  -- module and does not need the network package must still depend on the
+  -- network package because a user of that package may have another package
+  -- that depends on network and uses Network.URI. As far as I can tell, the
+  -- only way to avoid this is for all network-dependent packages to agree to
+  -- use only network >= 2.6 in future versions.
+  --
+  -- Looking back at the issue, it makes sense that we have to use these
+  -- constraints. Constraints are global among all packages, so a package A that
+  -- conflicts with a package B must explicitly restrict all possible versions
+  -- of B to avoid conflict in any combination.

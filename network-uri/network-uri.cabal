@@ -1,0 +1,7 @@
+name:                network-uri
+version:             2.5.0.0
+build-type:          Simple
+cabal-version:       >=1.10
+
+library
+  default-language: Haskell98
