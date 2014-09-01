@@ -1,0 +1,14 @@
+name:                   ex
+version:                0.1
+build-type:             Simple
+cabal-version:          >= 1.10
+
+flag myflag
+  default:              True
+
+library
+  exposed-modules:      Main
+  default-language:     Haskell2010
+  build-depends:        base, dep
+  if flag(myflag)
+    build-depends:      network-uri >= 2.6
